@@ -8,6 +8,7 @@
 #include "Eigen-3.3/Eigen/QR"
 #include "MPC.h"
 #include "json.hpp"
+#include <ctime>
 
 // for convenience
 using json = nlohmann::json;
@@ -70,12 +71,14 @@ int main() {
 
   // MPC is initialized here!
   MPC mpc;
-
-  h.onMessage([&mpc](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
+  clock_t begin = clock();
+  h.onMessage([&mpc, &begin](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                      uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
+    double elapsed_secs_since_lmeas = double(clock() - begin) / CLOCKS_PER_SEC;
+    begin = clock();
     string sdata = string(data).substr(0, length);
     cout << sdata << endl;
     if (sdata.size() > 2 && sdata[0] == '4' && sdata[1] == '2') {
@@ -132,6 +135,7 @@ int main() {
           * Both are in between [-1, 1].
           *
           */
+          double elapsed_secs_in_opt = double(clock() - begin) / CLOCKS_PER_SEC;
           double steer_value = -vars[0]/deg2rad(25);
           double throttle_value = vars[1];
 
@@ -173,10 +177,13 @@ int main() {
 
           msgJson["next_x"] = next_x_vals;
           msgJson["next_y"] = next_y_vals;
-
+          msgJson["meas_time"] = elapsed_secs_since_lmeas;
+          msgJson["opt_time"] = elapsed_secs_in_opt;
 
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
           std::cout << msg << std::endl;
+          std::cout << "Meas time = " << elapsed_secs_since_lmeas << std::endl;
+          std::cout << "Optimization time = " << elapsed_secs_in_opt << std::endl;
           // Latency
           // The purpose is to mimic real driving conditions where
           // the car does actuate the commands instantly.
