@@ -1,0 +1,9 @@
+=> brew tap udacity/CarND-MPC-Project https://github.com/udacity/CarND-MPC-Project
+=> brew tap brewsci/science https://github.com/brewsci/homebrew-science
+
+Go to /usr/local/Homebrew/Library/Taps/brewsci/homebrew-science/Formula , copy scotch.rb and scotch5.rb.
+Paste the above two files into /usr/local/Homebrew/Library/Taps/udacity/homebrew-carnd-mpc-project folder
+Then:
+=> brew untap brewsci/science
+=> brew install ipopt --with-openblas
+
