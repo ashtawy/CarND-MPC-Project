@@ -11,7 +11,7 @@ In this project, we implement Model Predictive Control to drive a car autonomous
 
 ## Kinematic Bicycle Model
 
-In order to control the car, we need to accurately and efficiently predict its behaviour (state) in response to different actuator commands such as throttle and steering. In this project, we use the simple Kinematic Bicycle model to achive this. The kinematic bicycle model for a car reduces the front and rear pairs of wheels into single front and rear wheels as shown in the figure below. 
+In order to control the car, we need to accurately and efficiently predict its behavior (state) in response to different actuator commands such as throttle and steering. In this project, we use the simple Kinematic Bicycle model to achieve this. The kinematic bicycle model for a car reduces the front and rear pairs of wheels into single front and rear wheels as shown in the figure below. 
 
 <p align="center">
   <img src="bicycle_model.png">
@@ -27,7 +27,7 @@ y<sub>t+1</sub> = y<sub>t</sub> + v<sub>t</sub> &lowast; &Delta;t &lowast; sin(&
 
 v<sub>t+1</sub> = v<sub>t</sub> + a<sub>t</sub> &lowast; &Delta;t
 
-The parameter Lf here is the distance between the front axle of the car and its center of mass. It is empircally determined by driving the car in a circle at constant speed and steering angle. The value used in this project is 2.67.
+The parameter Lf here is the distance between the front axle of the car and its center of mass. It is empirically determined by driving the car in a circle at constant speed and steering angle. The value used in this project is 2.67.
 
 An important requirement in designing an MPC is to follow the reference trajectory with minimal cross-track error (CTE). Cross track error is the distance between the vehicle's lateral position y and the trajectory defined by the polynomial f(x). The function f is typically a third order polynomial fitted to the waypoints provided at time step t. The following equation computes CTE at step t+1 using the vehicle's longitudinal position, its speed and orientation error at step t:
 
@@ -37,16 +37,16 @@ The orientation error e&psi; which is defined as follows:
 
 e&psi;<sub>t+1</sub> = &psi;<sub>t</sub> - &psi;des<sub>t</sub> + v<sub>t</sub>/Lf &lowast; &Delta;t &lowast; &delta;<sub>t</sub>
 
-The term &psi;des<sub>t</sub> here is the the desired direction at time step t. It is not readily provided, but it can be computed by finding the slope of the trangent line to the reference trajectory (f(x)) at location x<sub>t</sub> and then computing the angle of the slope. 
+The term &psi;des<sub>t</sub> here is the the desired direction at time step t. It is not readily provided, but it can be computed by finding the slope of the tangent line to the reference trajectory (f(x)) at location x<sub>t</sub> and then computing the angle of the slope. 
 
 ## MPC
 The basic idea of <span style="color:blue">*Model*</span> <span style="color:red">*Predictive*</span> *Control* is to use the kinematic <span style="color:blue">*Model*</span> of the car to <span style="color:red">*Predict* or Simulate</span> how its state (position, speed, etc.) would change to different actuator (steering angle and throttle) settings and then choose the best/optimal actuation setting that minimizes CTE, e&psi;, sudden and/or excessive use of acceleration/braking/steering, etc.
 
 Typically, we predict or simulate the car's state for a predefined length of time in the future. In this project, we set our prediction horizon to 1 second which is about 22 meters in terms of distance for a speed of ~50 MPH. During this time, we wish to have a very accurate picture of the state of the vehicle. Therefore, we discretize the 1-second period into (&Delta;t=) 50 millisecond-wide steps. As a result, we end up with (N=) 20 states of positions, speeds, and directions that should match with the reference waypoints, pre-defined speeds, and direction. We use the C++ Ipopt optimizer to find the optimal set of (20-1=) 19 throttle and steering angle values that render the car's future 20 states as close to the reference states as possible. 
 
-Choosing the values for the parameters N and &Delta;t was first based on guessing and I then fine tuned the values based on intiution and trial-and-error. I started off with a small &Delta;t value of 0.001 and realized the car was moving too slow. I then fixed N to roughly the number of waypoints and increased &Delta;t to 0.01 and then 0.05. The values of N=20 and &Delta;t = 0.05 seconds gave the best performance for the number of combinations of N & &Delta;t I tried.    
+Choosing the values for the parameters N and &Delta;t was first based on guessing and I then fine tuned the values based on intuition and trial-and-error. I started off with a small &Delta;t value of 0.001 and realized the car was moving too slow. I then fixed N to roughly the number of waypoints and increased &Delta;t to 0.01 and then 0.05. The values of N=20 and &Delta;t = 0.05 seconds gave the best performance for the number of combinations of N & &Delta;t I tried.    
 
-Even though we predict states and find optimal actuators for many time steps in the future, we only take the first throttle and steering angle values from the 19 pairs found by the optimizer and discard the next 18. We then apply this pair of actuators to the car. Instead of applying the next 18 actuator commands that we discarded, we will just repeat the entire process of: (i) state and waypoints collenction, (ii) trajectory polynomial fitting, and (iii) optimization to get the next single pair of throttle and steering angle. We apply these commands to the car and repeat the loop until the car reaches its destination. For optimal vehicle control, we should sample the state of the vehicle and produce the next actuator commands as often as it is computationally possible. 
+Even though we predict states and find optimal actuators for many time steps in the future, we only take the first throttle and steering angle values from the 19 pairs found by the optimizer and discard the next 18. We then apply this pair of actuators to the car. Instead of applying the next 18 actuator commands that we discarded, we will just repeat the entire process of: (i) state and waypoints collection, (ii) trajectory polynomial fitting, and (iii) optimization to get the next single pair of throttle and steering angle. We apply these commands to the car and repeat the loop until the car reaches its destination. For optimal vehicle control, we should sample the state of the vehicle and produce the next actuator commands as often as it is computationally possible. 
 
 To give a simple example about MPC, let's assume that the car's current location is (x=0, y=10) and the reference trajectory is a straight line from the point (x=0, y=-1) to the point, say, (x=100, y=-1). Feeding this into our control signals' optimizer we get the results shown in the figure below. 
 
@@ -54,12 +54,12 @@ To give a simple example about MPC, let's assume that the car's current location
   <img src="cpp_ipopt_results.png">
 </p>
 
-The figure shows that the vehicle starts with CTE of -11 and it reaches 0 error after ~250 steps. The steering angle is changing smoothly to avoid dangerous and abrupt change of direction. The throttle is held constant at 1 (maximum value allowed) since the car's speed has not met the refernce value of 40 MPH. The throttle would go to zero when speed reaches 40 MPH had we run the simulation a little longer. This simulation was implemented in [Python/TensorFlow](https://github.com/ashtawy/model_predictive_control_in_tensorflow/blob/master/model_predictive_control_in_tensorflow.ipynb) as well as [C++/Ipopt](https://github.com/ashtawy/model_predictive_control_in_tensorflow/blob/master/src/MPC.cpp). 
+The figure shows that the vehicle starts with CTE of -11 and it reaches 0 error after ~250 steps. The steering angle is changing smoothly to avoid dangerous and abrupt change of direction. The throttle is held constant at 1 (maximum value allowed) since the car's speed has not met the reference value of 40 MPH. The throttle would go to zero when speed reaches 40 MPH had we run the simulation a little longer. This simulation was implemented in [Python/TensorFlow](https://github.com/ashtawy/model_predictive_control_in_tensorflow/blob/master/model_predictive_control_in_tensorflow.ipynb) as well as [C++/Ipopt](https://github.com/ashtawy/model_predictive_control_in_tensorflow/blob/master/src/MPC.cpp). 
 
 ## Connection and Latency Delay
-A typical car does not respond to actuator commands (e.g., acceleration) immediately. Rather, there is some finite delay between the initiation of the command and the time when the car's state changes due to latency or other physical constraints. Such delays must be accounted for when desinging the controller system. Otherwise, the steering and/or throttle commands that were calculated based on the assumption that the car is in a certain state may not be valid since they will take affect too late when the car has moved to a new different state. 
+A typical car does not respond to actuator commands (e.g., acceleration) immediately. Rather, there is some finite delay between the initiation of the command and the time when the car's state changes due to latency or other physical constraints. Such delays must be accounted for when designing the controller system. Otherwise, the steering and/or throttle commands that were calculated based on the assumption that the car is in a certain state may not be valid since they will take affect too late when the car has moved to a new different state. 
 
-The remedy for this delay problem is fairly simple when controlling a vehicle using MPC. The trick is to predict the car's state after the latency time has elapsed and find the optimal steering and throttle values for that future state. The prediction step is done using the kinematic bicycle model describe above. We simply assign &Delta;t in the equatinos above to the latency time (100 ms) and use the new state of the vehicle as if it were the current state.   
+The remedy for this delay problem is fairly simple when controlling a vehicle using MPC. The trick is to predict the car's state after the latency time has elapsed and find the optimal steering and throttle values for that future state. The prediction step is done using the kinematic bicycle model describe above. We simply assign &Delta;t in the equations above to the latency time (100 ms) and use the new state of the vehicle as if it were the current state.   
 
 
 
